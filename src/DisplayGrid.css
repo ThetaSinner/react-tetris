@@ -1,0 +1,47 @@
+:root {
+    --item-height: 5vh;
+}
+
+.GridParent {
+    display: flex;
+    justify-content: center;
+}
+
+.GridContainer {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    width: calc(10 * var(--item-height));
+}
+
+.GridRow {
+    display: flex;
+    flex-direction: row;
+}
+
+.GridItem {
+    flex: 1;
+    height: var(--item-height);
+
+    border-style: solid;
+    border-color: black;
+
+    border-width: 2px;
+    //margin: -2px;
+}
+
+.GridItemColor-R {
+    background: red;
+}
+
+.GridItemColor-G {
+    background: green;
+}
+
+.GridItemColor-B {
+    background: blue;
+}
+
+.GridItemColor-OR {
+    background: orangered;
+}
