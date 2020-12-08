@@ -146,6 +146,19 @@ function makeL(): Shape {
   }
 }
 
+function makeAltL(): Shape {
+  return {
+    renderShape: [
+      [Paint, Paint, Paint],
+      [Paint, NoPaint, NoPaint]
+    ],
+    center: [1, 0],
+    position: [4, -1],
+    rotation: Rotation.None,
+    colour: ShapeColour.Green
+  }
+}
+
 function makeLineThree(): Shape {
   return {
     renderShape: [[Paint, Paint, Paint]],
@@ -182,6 +195,18 @@ function makePyramid(): Shape {
   }
 }
 
+function makeSquare(): Shape {
+  return {
+    renderShape: [
+      [Paint, Paint],
+      [Paint, Paint]
+    ],
+    center: [1, 0],
+    position: [4, -1],
+    colour: ShapeColour.Orange
+  }
+}
+
 function copyShape(shape: Shape): Shape {
   return {
     renderShape: shape.renderShape, // const
@@ -195,9 +220,11 @@ function copyShape(shape: Shape): Shape {
 const randomShape = (() => {
   const shapeOptions = [
     makeL,
+    makeAltL,
     makeZigZag,
     makeLineThree,
-    makePyramid
+    makePyramid,
+    makeSquare
   ]
 
   return () => {
@@ -218,7 +245,7 @@ type Shape = {
   renderShape: string[][];
   center: number[]; // Row, Col
   position: number[]; // Row, Col
-  rotation: Rotation;
+  rotation?: Rotation;
   colour: ShapeColour
 }
 
@@ -298,7 +325,9 @@ const eventLoop = (() => {
           nextShape.position[Col]--
           break
         case LoopCause.InputRotate:
-          nextShape.rotation = (nextShape.rotation + 1) % 4
+          if (nextShape.rotation !== undefined) {
+            nextShape.rotation = (nextShape.rotation + 1) % 4
+          }
       }
     }
 
@@ -439,10 +468,12 @@ function renderShape(gridModel: string[][], shape: Shape): RenderResponse {
       let mapRow = -1
       switch (shape.rotation) {
         case Rotation.None:
+          console.log('no rotation')
           mapCol = shape.position[Col] + (colIndex - shape.center[Col])
           mapRow = shape.position[Row] + (rowIndex - shape.center[Row])
           break
         case Rotation.Clockwise1:
+          console.log('some rotation')
           mapCol = shape.position[Col] - (rowIndex - shape.center[Row])
           mapRow = shape.position[Row] + (colIndex - shape.center[Col])
           break
@@ -455,10 +486,18 @@ function renderShape(gridModel: string[][], shape: Shape): RenderResponse {
           mapRow = shape.position[Row] - (colIndex - shape.center[Col])
           break
         default:
-          throw Error('oops')
+          console.log('hate')
+          mapCol = shape.position[Col] + (colIndex - shape.center[Col])
+          mapRow = shape.position[Row] + (rowIndex - shape.center[Row])
       }
 
       if (mapRow < 0) {
+        if (mapCol < 0 || mapRow >= gridModel.length) {
+          // Even though we're going to allow rendering of objects off the top, if the object has moved off the right or left
+          // then this is a special case and must be blocked
+          renderResponse = RenderResponse.IllegalMove
+        }
+
         // Allow this, just don't render it. The shape is off the top of the grid, let it move down.
         return
       }
@@ -528,7 +567,8 @@ function clearShape(gridModel: string[][], shape: Shape) {
           mapRow = shape.position[Row] - (colIndex - shape.center[Col])
           break
         default:
-          throw Error('oops')
+          mapCol = shape.position[Col] + (colIndex - shape.center[Col])
+          mapRow = shape.position[Row] + (rowIndex - shape.center[Row])
       }
 
       if (mapRow < 0) {
