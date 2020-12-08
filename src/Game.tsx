@@ -8,7 +8,8 @@ enum LoopCause {
     Tick,
     InputRight,
     InputLeft,
-    InputRotate
+    InputRotate,
+    ResetGame
 }
 
 enum LoopResponse {
@@ -35,8 +36,24 @@ enum ShapeColour {
 
 export const eventLoopStart = (() => {
     let started = false
-    return (gridModel: string[][], setGridModel: Function) => {
+    return (gridModel: string[][], setGridModel: Function, speed: string) => {
         if (!started) {
+            let speedMillis = -1
+            switch (speed) {
+                case 'slow':
+                    speedMillis = 1500
+                    break
+                case 'normal':
+                    speedMillis = 1000
+                    break
+                case 'fast':
+                    speedMillis = 700
+                    break
+                default:
+                    console.log('Invalid game speed setting')
+                    return
+            }
+
             const intervalHandle = setInterval(() => {
                 const loopResponse = eventLoop(gridModel, setGridModel, LoopCause.Tick)
                 if (loopResponse === LoopResponse.Crash) {
@@ -46,9 +63,11 @@ export const eventLoopStart = (() => {
                     clearInterval(intervalHandle)
                     alert('Game over!')
                 }
-            }, 1000)
+            }, speedMillis)
 
-            window.addEventListener("keydown", (event) => {
+            const keyPressListener = (event: KeyboardEvent) => {
+                console.log('Key event')
+
                 if (event.code === 'ArrowRight') {
                     const loopResponse = eventLoop(null, null, LoopCause.InputRight)
 
@@ -94,6 +113,15 @@ export const eventLoopStart = (() => {
                         alert('Sorry, the game crashed :(')
                     }
                 }
+            }
+
+            window.addEventListener('keydown', keyPressListener)
+
+            window.addEventListener('shutdown-game', () => {
+                clearInterval(intervalHandle)
+                window.removeEventListener('keydown', keyPressListener)
+                eventLoop(null,  null, LoopCause.ResetGame)
+                started = false
             })
 
             started = true
@@ -104,14 +132,13 @@ export const eventLoopStart = (() => {
 const Paint = 'X'
 const NoPaint = ''
 
-function makeCross(): Shape {
+function makeL(): Shape {
     return {
         renderShape: [
-            [NoPaint, Paint, NoPaint],
             [Paint, Paint, Paint],
-            [NoPaint, Paint, NoPaint]
+            [NoPaint, NoPaint, Paint]
         ],
-        center: [1, 1],
+        center: [1, 0],
         position: [4, -1],
         rotation: Rotation.None,
         colour: ShapeColour.Blue
@@ -166,7 +193,7 @@ function copyShape(shape: Shape): Shape {
 
 const randomShape = (() => {
     const shapeOptions = [
-        makeCross,
+        makeL,
         makeZigZag,
         makeLineThree,
         makePyramid
@@ -201,7 +228,18 @@ const eventLoop = (() => {
     let currentShape: Shape | null = null
     let spawnNewShape = false;
 
+    let score = 0
+
     return (gridModelInput: string[][] | null, setGridModelInput: Function | null, loopCause: LoopCause): LoopResponse => {
+        if (loopCause === LoopCause.ResetGame) {
+            score = 0
+            spawnNewShape = false
+            currentShape = null
+            gridModel = null
+            setGridModel = null
+            return LoopResponse.Success
+        }
+
         if (gridModel === null || setGridModel === null) { // Run on first loop only
             if (gridModelInput !== null) {
                 gridModel = gridModelInput
@@ -332,20 +370,24 @@ const eventLoop = (() => {
         }
 
         for (let row = fullRow; row > 0; row--) {
-            gridModel[row - 1].forEach((item, index) => {
+            for (let i = 0; i < gridModel[row - 1].length; i++) {
                 if (gridModel) {
-                    gridModel[row][index] = item
+                    gridModel[row][i] = gridModel[row - 1][i]
                 } else {
                     throw Error('Error accessing the grid while clearing rows')
                 }
-            })
+            }
         }
 
         // Replace the top row, all the other rows have been copied down but this could still have something drawn on it.
         // It shouldn't do after the shift down!
         gridModel[0] = Array(gridModel[0].length).fill('')
 
-        if (fullRow == -1) {
+        // A row was cleared, increase score
+        score += gridModel[0].length
+        window.dispatchEvent(new CustomEvent('update-score', { detail: score }))
+
+        if (fullRow !== -1) {
             // Everything just shifted down, so there could be more work to do, call again!
             clearRows()
         }
