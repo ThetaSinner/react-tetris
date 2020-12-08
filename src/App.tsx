@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import DisplayGrid from "./DisplayGrid";
 import {eventLoopStart} from "./Game";
 import {
@@ -9,7 +9,8 @@ import {
   FormLabel,
   makeStyles,
   Radio,
-  RadioGroup, Typography
+  RadioGroup,
+  Typography
 } from "@material-ui/core";
 import PlayerScore from "./PlayerScore";
 
