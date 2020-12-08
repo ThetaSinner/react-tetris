@@ -468,12 +468,10 @@ function renderShape(gridModel: string[][], shape: Shape): RenderResponse {
       let mapRow = -1
       switch (shape.rotation) {
         case Rotation.None:
-          console.log('no rotation')
           mapCol = shape.position[Col] + (colIndex - shape.center[Col])
           mapRow = shape.position[Row] + (rowIndex - shape.center[Row])
           break
         case Rotation.Clockwise1:
-          console.log('some rotation')
           mapCol = shape.position[Col] - (rowIndex - shape.center[Row])
           mapRow = shape.position[Row] + (colIndex - shape.center[Col])
           break
@@ -486,7 +484,6 @@ function renderShape(gridModel: string[][], shape: Shape): RenderResponse {
           mapRow = shape.position[Row] - (colIndex - shape.center[Col])
           break
         default:
-          console.log('hate')
           mapCol = shape.position[Col] + (colIndex - shape.center[Col])
           mapRow = shape.position[Row] + (rowIndex - shape.center[Row])
       }
